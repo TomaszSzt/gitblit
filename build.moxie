@@ -10,12 +10,12 @@ name: Gitblit
 description: pure Java Git solution
 groupId: com.gitblit
 artifactId: gitblit
-version: 1.9.2-SNAPSHOT
+version: 1.9.4-SNAPSHOT
 inceptionYear: 2011
 
 # Current stable release
-releaseVersion: 1.9.1
-releaseDate: 2020-04-05
+releaseVersion: 1.9.3
+releaseDate: 2022-04-09
 
 # Project urls
 url: 'http://gitblit.com'
@@ -105,7 +105,7 @@ repositories: central, eclipse-snapshots, eclipse, gitblit
 
 # Convenience properties for dependencies
 properties: {
-  jetty.version  : 9.2.13.v20150730
+  jetty.version  : 9.2.30.v20200428
   slf4j.version  : 1.7.29
   wicket.version : 1.4.22
   lucene.version : 5.5.2

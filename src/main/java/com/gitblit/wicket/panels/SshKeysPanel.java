@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.gitblit.wicket.WicketUtils;
+import org.apache.wicket.Component;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
@@ -63,8 +65,31 @@ public class SshKeysPanel extends BasePanel {
 
 		setOutputMarkupId(true);
 
+		final IModel<String> keyFeedback = Model.of("");
 		final List<SshKey> keys = new ArrayList<SshKey>(app().keys().getKeys(user.username));
-		final ListDataProvider<SshKey> dp = new ListDataProvider<SshKey>(keys);
+		// Create list data provider that gets rid of the (not serializable EdDSA) PublicKey.
+		final ListDataProvider<SshKey> dp = new ListDataProvider<SshKey>(keys) {
+			@Override
+			public IModel<SshKey> model(final SshKey key) {
+				return new IModel<SshKey>() {
+					@Override
+					public SshKey getObject() {
+						return key;
+					}
+
+					@Override
+					public void setObject(SshKey object) {
+						// Cannot get set
+					}
+
+					@Override
+					public void detach() {
+						key.detachPublicKey();
+					}
+				};
+			}
+
+		};
 		final DataView<SshKey> keysView = new DataView<SshKey>("keys", dp) {
 			private static final long serialVersionUID = 1L;
 
@@ -90,6 +115,7 @@ public class SshKeysPanel extends BasePanel {
 							// update the panel
 							target.addComponent(SshKeysPanel.this);
 						}
+						keyFeedback.setObject("");
 					}
 				};
 				if (!canWriteKeys) {
@@ -123,6 +149,10 @@ public class SshKeysPanel extends BasePanel {
 				"span5",
 				keyComment));
 
+		Component addKeyFeedback = new Label("addKeyFeedback", keyFeedback).setOutputMarkupId(true);
+		WicketUtils.setCssStyle(addKeyFeedback, "color: red; font-weight: bold;");
+		addKeyForm.add(addKeyFeedback);
+
 		addKeyForm.add(new AjaxButton("addKeyButton") {
 
 			private static final long serialVersionUID = 1L;
@@ -134,6 +164,8 @@ public class SshKeysPanel extends BasePanel {
 				String data = keyData.getObject();
 				if (StringUtils.isEmpty(data)) {
 					// do not submit empty key
+					keyFeedback.setObject(getString("gb.addSshKeyErrorEmpty"));
+					target.addComponent(addKeyFeedback);
 					return;
 				}
 
@@ -142,6 +174,8 @@ public class SshKeysPanel extends BasePanel {
 					key.getPublicKey();
 				} catch (Exception e) {
 					// failed to parse the key
+					keyFeedback.setObject(getString("gb.addSshKeyErrorFormat"));
+					target.addComponent(addKeyFeedback);
 					return;
 				}
 
@@ -163,9 +197,12 @@ public class SshKeysPanel extends BasePanel {
 					keys.clear();
 					keys.addAll(app().keys().getKeys(user.username));
 
+					keyFeedback.setObject("");
+
 					// update the panel
 					target.addComponent(SshKeysPanel.this);
 				}
+				else keyFeedback.setObject("Key not added.");
 			}
 		});
 

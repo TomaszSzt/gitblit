@@ -102,7 +102,6 @@ import com.gitblit.wicket.panels.CommentPanel;
 import com.gitblit.wicket.panels.DiffStatPanel;
 import com.gitblit.wicket.panels.IconAjaxLink;
 import com.gitblit.wicket.panels.LinkPanel;
-import com.gitblit.wicket.panels.ShockWaveComponent;
 import com.gitblit.wicket.panels.SimpleAjaxLink;
 
 /**
@@ -1562,7 +1561,7 @@ public class TicketPage extends RepositoryPage {
 		// pt instructions
 		String ptStep = MessageFormat.format("pt pull {0,number,0}", ticket.number);
 		cmd.add(new Label("ptMergeStep", ptStep));
-		cmd.add(createCopyFragment("ptMergeCopyStep", step1.replace("\n", " && ")));
+		cmd.add(createCopyFragment("ptMergeCopyStep", ptStep.replace("\n", " && ")));
 		return cmd;
 	}
 
@@ -1644,12 +1643,12 @@ public class TicketPage extends RepositoryPage {
 
 	protected Fragment createCopyFragment(String wicketId, String text) {
 		if (app().settings().getBoolean(Keys.web.allowFlashCopyToClipboard, true)) {
-			// clippy: flash-based copy & paste
+			// javascript: browser JS API based copy to clipboard
 			Fragment copyFragment = new Fragment(wicketId, "clippyPanel", this);
-			String baseUrl = WicketUtils.getGitblitURL(getRequest());
-			ShockWaveComponent clippy = new ShockWaveComponent("clippy", baseUrl + "/clippy.swf");
-			clippy.setValue("flashVars", "text=" + StringUtils.encodeURL(text));
-			copyFragment.add(clippy);
+			ContextImage img = WicketUtils.newImage("copyIcon", "clippy.png");
+			// Add the ID of the target element that holds the text to copy to clipboard
+			img.add(new SimpleAttributeModifier("data-clipboard-text", text));
+			copyFragment.add(img);
 			return copyFragment;
 		} else {
 			// javascript: manual copy & paste with modal browser prompt dialog

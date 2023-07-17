@@ -1,24 +1,170 @@
 #
 # ${project.version} release
 #
-r32: {
+r34: {
     title: ${project.name} ${project.version} released
     id: ${project.version}
     date: ${project.buildDate}
-    note: ~
+    note: ''
+          From 1.10.0 on Gitblit requires Java 8 as minimum Java version.
+
+          Should you have disabled the Flash-based copy-to-clipboard function because it wasn't working anymore (web.allowFlashCopyToClipboard = false), you may want to rethink this and enable it again. The configuration property has the same name, but the mechanism was exchanged. Flash is gone, and a modern JavaScript solution is now used to copy text directly to the clipboard (via clipboard.js).
+
+          The setting 'server.requireClientCertificates' now has three values: required, optional and none. While 'required' is synonymous to the old 'true' value, and 'optional' is synonymous to the old 'false' value, the new 'none' value results in the server never asking the client to present any client certificate at all. The old values 'true' and 'false' can still be used and keep their meaning.
+
+          ''
+    html: ~
+    text: ''
+          Highlights:
+
+          * Support for ECDSA and Ed25519 SSH keys
+          * Move to Java 8
+          * Explicitly disable requesting optional client TLS certificates
+          * Copy-to-clipboard button is back and working
+
+          While old DSA SSH host keys can still be used, a new Gitblit installation will no longer
+          generate a DSA host key. The default set of host keys is now RSA, ECDSA and Ed25519.
+
+          Snapshot builds of the current master branch are now available as Docker containers on
+          Docker Hub under the "Nightly" tag.
+          ''
+    security:
+      - Fix path traversal vulnerability which allowed access to "/resources//../WEB-INF/". (CVE-2022-31268) This was fixed by updating Jetty. (issue-1409)
+    fixes:
+      - Fix crash in Gitblit Authority when users were deleted from Gitblit but still had entries (certificates) in the Authority. (issue-1359, pr-1435)
+      - Fix tab-to-space conversion to work like tabs. (pr-1065 by @QuentinC)
+      - Fix user effective permission display when user is in multiple groups with different permissions. (pr-1100 by @felazuris)
+      - Fix issue in pt under Python 3. (pr-1428 by @urkle)
+      - Fix null pointer exception which could occur during debug logging. (pr-1433)
+      - Fix Bugtraq to fallback to UTF-8 if the commit encoding is unsupported.
+      - Fix errors in Bugtraq preventing display of commit completely.
+      - Fix misaligned images in primary repository URL display. (issue-1437)
+      - Fix incorrect text being copied by copy button on tickets page
+    changes:
+      - Minimum Java required increased to Java 8. (pr-1218 by @paladox)
+      - Add feedback on invalid keys to SSH key form. (issue-984, pr-1239 by @martinspielmann)
+      - Replace old Flash-based Clippy copy-paste buttons to copy repository URLs and other text to the clipboard with a modern JavaScript-based approach via clipboard.js. (issue-1241, issue-965, pr-1438 by @flaix)
+    additions:
+      - Option to explicitly disable optional client TLS certificates. (issue-1137, pr-1138 by @oddeirik)
+      - Support for ECDSA and Ed25519 (EdDSA) user keys. (pr-1427, pr-1272)
+      - New ECDSA and EdDSA host key types. (issue-1354, pr-1429 by @flaix)
+      - French version of empty repository page. (by @piradix)
+      - Add support for Jenkins access token. Use setting 'groovy.jenkinsToken'. (issue-1423, pr-1425 by @TDesjardins)
+    dependencyChanges:
+      - update to JavaMail 1.5.6 (pr-1217 by @paladox)
+      - update to Google Guice 5.1.0
+      - update to Google Guava 31.1-jre
+      - update to Google Gson 2.10
+      - update to Apache commons-io 2.11.0
+      - update to Apache commons-codec 1.9
+      - update to Apache commons-compress 1.22
+      - update to libpam4j 1.11
+      - update to MINA SSHD 1.7.0
+      - update to BouncyCastle 1.69
+      - update to Jetty 9.4.49.v20220914 (pr-1213 by @paladox, plus more)
+      - update to JGit 4.11.9.201909030838-r (pr-1252 by @jvanhercke, plus more)
+      - update to Bugtraq v0.4
+      - added clipboard.js, replacing Clippy
+    settings:
+      - { name: 'server.requireClientCertificates', defaultValue: 'optional' }
+    contributors:
+      - @paladox
+      - @QuentinC
+      - @felazuris
+      - Odd Eirik Nes
+      - Edward Rudd
+      - Florian Zschocke
+      - Martin Spielmann
+      - Jan Vanhercke
+      - @xxcdd
+      - @piradix
+      - Tino Desjardins
+}
+
+#
+# 1.9.3 release
+#
+r33: {
+    title: Gitblit 1.9.3 released
+    id: 1.9.3
+    date: 2022-04-09
+    note: ''
+          The 1.9 minor version is the last to support Java 7. From 1.10 on Gitblit will require Java 8.
+          ''
+    html: ~
+    text: ''
+          !! IMPORTANT SECURITY FIX FOR CONFIG USER SERVICE !!
+
+          There is a security vulnerability in version 1.9.2, which allows an attacker to gain
+          elevated access rights. This is present when the Config User Service is used as the
+          user service, which is the default.
+
+          Version 1.9.2 introduced a new implementation to store user data in the user config file
+          which holds user name, password, access rights etc. This was done to solve problems with
+          very large user bases (pr-1364). This new implementation does not properly escape all
+          control characters, like newline and tab. As a result, a normal user, when logged into
+          Gitblit, can edit his profile data and enter values in e.g. the email address that are
+          interpreted as control characters in the text file stored on disk. This allows the malicious
+          user to give themselves e.g. elevated access rights on their account.
+
+          This is fixed in 1.9.3. Updates of existing installations should be made to 1.9.3, not 1.9.2.
+
+          Many thanks to Github user @YYHYlh for finding and reporting this issue (issue-1410).
+          ''
+    security:
+      - Fix escaping control characters in config user service, resolving a security vulnerability. (issue-1410)
+    fixes: ~
+    changes: ~
+    additions: ~
+    dependencyChanges: ~
+    contributors: ~
+}
+
+#
+# 1.9.2 release
+#
+r32: {
+    title: Gitblit 1.9.2 released
+    id: 1.9.2
+    date: 2022-02-05
+    note: ''
+          The 1.9 minor version is the last to support Java 7. From 1.10 on Gitblit will require Java 8.
+          ''
     html: ~
     text: ~
     security: ~
     fixes:
       - Fix raw links broken for branches with a forward slash in the name (issue-1290, issue-1234, issue-813)
-      - Fix markdown links to files in subfolders (issue-1358)
-    changes: ~
+      - Fix markdown links to files in subfolders (issue-1358, pr-1392 by @TomaszSzt)
+      - Fix high CPU load when saving huge users.conf file (pr-1364 by @Curly060)
+      - Fix broken encoding in Norwegian language file (issue-834, pr-1379)
+      - Fix various issues (typos, broken and duplicate keys) in language properties files (pr-1380 by @flaix)
+      - Fix mirrored HTTP(S) with a user name and password (issue-1059, pr-1381 by @edram)
+      - Fix relative time display being off on activity page (issue-800, issue-1248, pr-1382)
+      - Fix URL encoding for links to raw view for files (issue-1375, pr-1383)
+      - Resolve StackOverflowErrors on page serialization (issue-1011, pr-1141 by @tomaswolf)
+      - Fix double encoding links in Markdown/Wiki pages (issue-864)
+    changes:
+      - Updated traditional Chinese translation (pr-1367 by @YMNNs)
+      - Make it possible to call the Windows batch commands on the command line from a different folder (pr-1370 by @Zwixx)
+      - Updated Japanese translation (pr-1398 by @TakehideMorimoto)
     additions:
-      - Add service scripts for FreeBSD (pr-1345)
+      - Add service scripts for FreeBSD (pr-1345 by @davehofmann)
+      - Add Russian translation (pr-1343 by @vhot2076)
     dependencyChanges:
       - update to Mockito 2.28.2
+      - update to Jetty 9.2.30.v20200428
     contributors:
+      - Florian Zschocke
       - David Hofmann
+      - @YMNNs
+      - Ingo Lafrenz
+      - Christian
+      - @edram
+      - Vladimir A.
+      - Tomas Wolf
+      - Tomasz Szt
+      - Takehide Morimoto
 }
 
 #
@@ -29,7 +175,7 @@ r31: {
     id: 1.9.1
     date: 2020-04-05
     note: ''
-          When you have Gitblit installed as a service under Linux or Windows, you may need to edit your service script/definition. The command line to start Gitblit needs to be different, the classpath and class are speficied now.
+          When you have Gitblit installed as a service under Linux or Windows, you may need to edit your service script/definition. The command line to start Gitblit needs to be different, the classpath and class are specified now.
 
           See notes for release 1.9.0.
           ''
@@ -266,6 +412,7 @@ r28: {
     - Improve diff performance by gracefully limiting large diffs (pr-226)
     - Add granular settings to disable display of git transport urls (pr-274)
     - Use author date to be consistent with other tools (pr-919)
+    - Adjust URLs to point to new 'gitblit-org.github.com' organisation (issue-1441, pr-1442)
     additions:
     - Add GitHub Octicons (ticket-106)
     - Support for chain-loading properties files (ticket-110) 
@@ -2014,6 +2161,6 @@ r1: {
 	- James Moger
 }
 
-snapshot: &r32
-release: &r31
-releases: &r[1..31]
+snapshot: &r34
+release: &r33
+releases: &r[1..33]

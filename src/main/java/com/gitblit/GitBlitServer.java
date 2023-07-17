@@ -44,7 +44,8 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.session.HashSessionManager;
+import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.servlet.ListenerHolder;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -57,6 +58,7 @@ import org.kohsuke.args4j.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.gitblit.Constants.TlsClientCertPolicy;
 import com.gitblit.authority.GitblitAuthority;
 import com.gitblit.authority.NewCertificateConfig;
 import com.gitblit.servlet.GitblitContext;
@@ -289,14 +291,18 @@ public class GitBlitServer {
 				logger.info("Setting up HTTPS transport on port " + params.securePort);
 				GitblitSslContextFactory factory = new GitblitSslContextFactory(params.alias,
 						serverKeyStore, serverTrustStore, params.storePassword, caRevocationList);
-				if (params.requireClientCertificates) {
+				TlsClientCertPolicy clientCertPolicy = TlsClientCertPolicy.fromString(params.requireClientCertificates);
+				if (clientCertPolicy == TlsClientCertPolicy.REQUIRED) {
 					factory.setNeedClientAuth(true);
-				} else {
+				} else if (clientCertPolicy == TlsClientCertPolicy.OPTIONAL) {
+					factory.setNeedClientAuth(false);
 					factory.setWantClientAuth(true);
+				} else {
+					factory.setNeedClientAuth(false);
+					factory.setWantClientAuth(false);
 				}
 
 				ServerConnector connector = new ServerConnector(server, factory);
-				connector.setSoLingerTime(-1);
 				connector.setIdleTimeout(settings.getLong(Keys.server.httpIdleTimeout, 30000L));
 				connector.setPort(params.securePort);
 				String bindInterface = settings.getString(Keys.server.httpsBindInterface, null);
@@ -333,7 +339,6 @@ public class GitBlitServer {
 	        httpConfig.setSendDateHeader(false);
 
 			ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
-			connector.setSoLingerTime(-1);
 			connector.setIdleTimeout(settings.getLong(Keys.server.httpIdleTimeout, 30000L));
 			connector.setPort(params.port);
 			String bindInterface = settings.getString(Keys.server.httpBindInterface, null);
@@ -375,13 +380,13 @@ public class GitBlitServer {
 		rootContext.setWar(location.toExternalForm());
 		rootContext.setTempDirectory(tempDir);
 
+
 		// Set cookies HttpOnly so they are not accessible to JavaScript engines
-		HashSessionManager sessionManager = new HashSessionManager();
-		sessionManager.setHttpOnly(true);
+		SessionHandler sessionHandler = rootContext.getSessionHandler();
+		sessionHandler.setHttpOnly(true);
 		// Use secure cookies if only serving https
-		sessionManager.setSecureRequestOnly( (params.port <= 0 && params.securePort > 0) ||
-				(params.port > 0 && params.securePort > 0 && settings.getBoolean(Keys.server.redirectToHttpsPort, true)) );
-		rootContext.getSessionHandler().setSessionManager(sessionManager);
+		sessionHandler.setSecureRequestOnly( (params.port <= 0 && params.securePort > 0) ||
+											 (params.port > 0 && params.securePort > 0 && settings.getBoolean(Keys.server.redirectToHttpsPort, true)) );
 
 		// Ensure there is a defined User Service
 		String realmUsers = params.userService;
@@ -447,12 +452,13 @@ public class GitBlitServer {
 			sh.setConstraintMappings(new ConstraintMapping[] { cm });
 
 			// Configure this context to use the Security Handler defined before
-			rootContext.setHandler(sh);
+			rootContext.setSecurityHandler(sh);
 		}
 
 		// Setup the Gitblit context
-		GitblitContext gitblit = newGitblit(settings, baseFolder);
-		rootContext.addEventListener(gitblit);
+		ListenerHolder gitblitHolder = new ListenerHolder(GitblitContext.class);
+		gitblitHolder.setListener(newGitblit(settings, baseFolder));
+		rootContext.getServletHandler().addListener(gitblitHolder);
 
 		try {
 			// start the shutdown monitor
@@ -600,7 +606,7 @@ public class GitBlitServer {
 		public Integer shutdownPort = FILESETTINGS.getInteger(Keys.server.shutdownPort, 8081);
 
 		@Option(name = "--requireClientCertificates", usage = "Require client X509 certificates for https connections.")
-		public Boolean requireClientCertificates = FILESETTINGS.getBoolean(Keys.server.requireClientCertificates, false);
+		public String requireClientCertificates = FILESETTINGS.getString(Keys.server.requireClientCertificates, "optional");
 
 		/*
 		 * Setting overrides

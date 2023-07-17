@@ -5,7 +5,9 @@ Gitblit is an open source, pure Java Git solution for managing, viewing, and ser
 
 More information about Gitblit can be found [here](http://gitblit.com).
 
-<a href='https://github.com/gitblit/gitblit/releases/latest'><img src='https://img.shields.io/badge/dynamic/json?color=9cf&label=Download&query=%24.name&url=https%3A%2F%2Fapi.github.com%2Frepos%2Fgitblit%2Fgitblit%2Freleases%2Flatest'></a>
+<a href='https://github.com/gitblit-org/gitblit/releases/latest' title='Download'><img alt='download badge' src='https://img.shields.io/badge/dynamic/json?color=9cf&label=Download&query=%24.name&url=https%3A%2F%2Fapi.github.com%2Frepos%2Fgitblit-org%2Fgitblit%2Freleases%2Flatest'></a>
+<a title='nightly docker' href='https://hub.docker.com/r/gitblit/gitblit/tags?page=1&name=nightly'><img alt='nightly docker badge' src='https://img.shields.io/badge/dynamic/json?color=2496ed&label=Nightly Docker&query=%24.tag_last_pushed&cacheSeconds=43200&url=https%3A%2F%2Fhub.docker.com%2Fv2%2Frepositories%2Fgitblit%2Fgitblit%2Ftags%2Fnightly'></a>
+![License](https://img.shields.io/github/license/gitblit-org/gitblit?color=%23f29024)
 
 License
 -------
@@ -16,7 +18,7 @@ The text of the license is included in the file LICENSE in the root of the proje
 Java Runtime Requirement
 ------------------------------------
 
-Gitblit requires at Java 7 Runtime Environment (JRE) or a Java 7 Development Kit (JDK).
+Gitblit requires a Java 8 Runtime Environment (JRE) or a Java 8 Development Kit (JDK).
 
 Getting help
 ------------
@@ -31,6 +33,16 @@ Contributing
 ------------
 
 GitHub pull requests are preferred.  Any contributions must be distributed under the terms of the [Apache Software Foundation license, version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
+
+Please see the [CONTRIBUTING file](CONTRIBUTING.md) for suggestions and guidelines on contributing to Gitblit. Thank you!
+
+### tl;dr
+1.  [Fork](https://github.com/gitblit-org/gitblit/fork) (and then `git clone https://github.com/gitblit-org/gitblit.git`).
+2.  Create a branch (`git checkout -b branch_name`).
+3.  Commit your changes (`git commit -a`).
+4.  Push to the branch (`git push origin branch_name`).
+5.  Open a Pull Request.
+
 
 Building Gitblit
 ----------------
@@ -52,5 +64,5 @@ Make sure to clone using `--recursive` OR to execute `git submodule update --ini
 Building Tips & Tricks
 ----------------------
 1. If you are running Ant from an ANSI-capable console, consider setting the `MX_COLOR` environment variable before executing Ant.<pre>set MX_COLOR=true</pre>
-2. The build script will honor your Maven proxy settings.  If you need to fine-tune this, please review the [settings.moxie](http://gitblit.github.io/moxie/settings.html) documentation.
+2. The build script will honor your Maven proxy settings.  If you need to fine-tune this, please review the [settings.moxie](http://gitblit-org.github.io/moxie/settings.html) documentation.
 

@@ -31,11 +31,15 @@ package com.syntevo.bugtraq;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.lib.Config;
@@ -54,6 +58,8 @@ import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 public final class BugtraqConfig {
 
 	// Constants ==============================================================
@@ -69,6 +75,7 @@ public final class BugtraqConfig {
 	private static final String LOG_FILTERREGEX = "logfilterregex";
 	private static final String LOG_LINKREGEX = "loglinkregex";
 	private static final String LOG_LINKTEXT = "loglinktext";
+	private static final String PROJECTS = "projects";
 
 	// Static =================================================================
 
@@ -91,6 +98,7 @@ public final class BugtraqConfig {
 			}
 			throw ex;
 		}
+
 		if (getString(null, URL, config, baseConfig) != null) {
 			allNames.add(null);
 		}
@@ -101,7 +109,7 @@ public final class BugtraqConfig {
 			}
 		}
 
-		final List<BugtraqEntry> entries = new ArrayList<BugtraqEntry>();
+		final List<BugtraqConfigEntry> entries = new ArrayList<>();
 		for (String name : allNames) {
 			final String url = getString(name, URL, config, baseConfig);
 			if (url == null) {
@@ -149,8 +157,26 @@ public final class BugtraqConfig {
 				}
 			}
 
+			final String projectsList = getString(name, PROJECTS, config, baseConfig);
+			final List<String> projects;
+			if (projectsList != null) {
+				projects = new ArrayList<>();
+
+				final StringTokenizer tokenizer = new StringTokenizer(projectsList, ",", false);
+				while (tokenizer.hasMoreTokens()) {
+					projects.add(tokenizer.nextToken().trim());
+				}
+
+				if (projects.isEmpty()) {
+					throw new ConfigInvalidException("'" + name + ".projects' must specify at least one project or be not present at all.");
+				}
+			}
+			else {
+				projects = null;
+			}
+
 			final String linkText = getString(name, LOG_LINKTEXT, config, baseConfig);
-			entries.add(new BugtraqEntry(url, idRegex, linkRegex, filterRegex, linkText));
+			entries.add(new BugtraqConfigEntry(url, idRegex, linkRegex, filterRegex, linkText, projects));
 		}
 
 		if (entries.isEmpty()) {
@@ -163,18 +189,18 @@ public final class BugtraqConfig {
 	// Fields =================================================================
 
 	@NotNull
-	private final List<BugtraqEntry> entries;
+	private final List<BugtraqConfigEntry> entries;
 
 	// Setup ==================================================================
 
-	BugtraqConfig(@NotNull List<BugtraqEntry> entries) {
+	BugtraqConfig(@NotNull List<BugtraqConfigEntry> entries) {
 		this.entries = entries;
 	}
 
 	// Accessing ==============================================================
 
 	@NotNull
-	public List<BugtraqEntry> getEntries() {
+	public List<BugtraqConfigEntry> getEntries() {
 		return Collections.unmodifiableList(entries);
 	}
 
@@ -199,6 +225,7 @@ public final class BugtraqConfig {
 				if (headId == null || ObjectId.zeroId().equals(headId)) {
 					return null;
 				}
+
 				RevCommit commit = rw.parseCommit(headId);
 				RevTree tree = commit.getTree();
 				tw.reset(tree);
@@ -207,7 +234,7 @@ public final class BugtraqConfig {
 					FileMode entmode = tw.getFileMode(0);
 					if (FileMode.REGULAR_FILE == entmode) {
 						ObjectLoader ldr = repository.open(entid, Constants.OBJ_BLOB);
-						content = new String(ldr.getCachedBytes(), commit.getEncoding());
+						content = new String(ldr.getCachedBytes(), guessEncoding(commit));
 						break;
 					}
 				}
@@ -243,6 +270,15 @@ public final class BugtraqConfig {
 		return baseConfig;
 	}
 
+	@NotNull
+	private static Charset guessEncoding(RevCommit commit) {
+		try {
+			return commit.getEncoding();
+		} catch (IllegalCharsetNameException | UnsupportedCharsetException e) {
+			return UTF_8;
+		}
+	}
+
 	@Nullable
 	private static String getString(@Nullable String subsection, @NotNull String key, @NotNull Config config, @Nullable Config baseConfig) {
 		final String value = config.getString(BUGTRAQ, subsection, key);
@@ -254,8 +290,8 @@ public final class BugtraqConfig {
 			return trimMaybeNull(baseConfig.getString(BUGTRAQ, subsection, key));
 		}
 
-			return value;
-		}
+		return value;
+	}
 
 	@Nullable
 	private static String trimMaybeNull(@Nullable String string) {
